@@ -1,6 +1,6 @@
 # from django.contrib import admin
-from django.urls import include
+from django.urls import include, path
 
 urlpatterns = [
-    include('', 'home.urls')
+    path('', include('home.urls'))
 ]
