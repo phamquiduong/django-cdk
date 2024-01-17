@@ -2,8 +2,7 @@ import os
 
 import aws_cdk as cdk
 from dotenv import load_dotenv
-
-from cdk.stack.django_stack import DjangoStack
+from stack.django_stack import DjangoStack
 
 if not load_dotenv():
     raise FileNotFoundError('Load environment variables failed')
