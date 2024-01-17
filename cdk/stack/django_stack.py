@@ -1,8 +1,11 @@
 import os
+from datetime import datetime
 
 from aws_cdk import (Duration, Stack, aws_apigateway, aws_cloudfront, aws_cloudfront_origins, aws_iam, aws_lambda,
                      aws_s3, aws_s3_deployment)
 from constructs import Construct
+
+NOW = datetime.now()
 
 
 class DjangoStack(Stack):
@@ -10,16 +13,16 @@ class DjangoStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
         self.construct_id = construct_id
 
-        self.create_s3_bucket()
-        self.create_cloudfront()
-        self.upload_file_to_s3()
+        self.__create_static_s3_bucket()
+        self.__create_static_cloudfront()
+        self.__upload_static_file_to_s3()
 
-        self.create_docker_lambda_function()
-        # self.add_role_policy_cognito()
+        self.__create_docker_lambda_function()
+        # self.__add_role_policy_cognito()
 
-        self.create_api_gateway()
+        self.__create_api_gateway()
 
-    def create_docker_lambda_function(self):
+    def __create_docker_lambda_function(self):
         path_to_function_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src",)
 
         is_arm64 = os.getenv('IS_ARM64', 'true').lower() == 'true'
@@ -28,16 +31,17 @@ class DjangoStack(Stack):
         self.docker_lambda_function = aws_lambda.DockerImageFunction(
             self,
             id=f"{self.construct_id}-Lambda",
+            function_name=f'{self.construct_id}-lambda-{NOW.strftime("%Y-%m-%d")}'.lower(),
             code=aws_lambda.DockerImageCode.from_image_asset(path_to_function_folder),
             timeout=Duration.seconds(30),
             **architecure_config,
             environment={
-                'IS_RUN_ON_LAMBDA': 'true',
+                'IS_ON_LAMBDA': 'true',
                 'STATIC_URL': f'https://{self.cloud_front.distribution_domain_name}/'
             },
         )
 
-    def add_role_policy_cognito(self):
+    def __add_role_policy_cognito(self):
         self.docker_lambda_function.add_to_role_policy(
             aws_iam.PolicyStatement(
                 sid='VisualEditor0',
@@ -51,21 +55,21 @@ class DjangoStack(Stack):
             )
         )
 
-    def create_api_gateway(self):
+    def __create_api_gateway(self):
         self.lambda_rest_api = aws_apigateway.LambdaRestApi(
             self,
             id=f'{self.construct_id}-API-Gateway',
             handler=self.docker_lambda_function  # type: ignore
         )
 
-    def create_s3_bucket(self):
+    def __create_static_s3_bucket(self):
         self.bucket = aws_s3.Bucket(
             self,
             id=f"{self.construct_id}-Bucket",
-            bucket_name='test-django-static-phamquiduong',
+            bucket_name=f'{self.construct_id}-bucket-{NOW.strftime("%Y-%m-%d")}'.lower(),
         )
 
-    def create_cloudfront(self):
+    def __create_static_cloudfront(self):
         self.cloud_front = aws_cloudfront.Distribution(
             self,
             id=f"{self.construct_id}-CloudFront",
@@ -77,7 +81,7 @@ class DjangoStack(Stack):
             )
         )
 
-    def upload_file_to_s3(self):
+    def __upload_static_file_to_s3(self):
         path_to_static_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static",)
 
         self.s3 = aws_s3_deployment.BucketDeployment(
