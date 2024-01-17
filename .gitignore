@@ -1,0 +1,27 @@
+*.swp
+package-lock.json
+__pycache__
+.pytest_cache
+.venv
+*.egg-info
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+
+# Environment variables
+.env
+tests/config.py
+
+# Docker-compose
+docker/nginx/config/nginx.conf
+docker/nginx/log/
+
+# Django log
+log/
+
+# IDE
+.vscode/
+
+# Static files
+/static/

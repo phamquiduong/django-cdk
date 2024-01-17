@@ -1,0 +1,44 @@
+version: "2.3"
+
+services:
+  # Django server
+  django:
+    build:
+      context: ../
+      dockerfile: docker/django/Dockerfile
+    expose:
+      - ${DJANGO_PORT}
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - REGION=${REGION}
+      - LOG_HANDLER=${LOG_HANDLER}
+    volumes:
+      - ../src:/src
+      - ../log:/log
+    command: bash -c "cd src && gunicorn --bind 0.0.0.0:${DJANGO_PORT} 'main:create_app()' --reload"
+    restart: always
+
+  # Nginx server
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    ports:
+      - ${NGINX_PORT}:80
+    volumes:
+      - ./nginx/config:/etc/nginx
+      - ./nginx/log/:/var/log/nginx/
+    command: /tmp/run_nginx.sh
+    environment:
+      - DOLLAR=$$
+    env_file:
+      - ./.env
+    depends_on:
+      - django
+    restart: always
+
+networks:
+  default:
+    external: true
+    name: ${COMPOSE_PROJECT_NAME}_network
